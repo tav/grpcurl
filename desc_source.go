@@ -219,6 +219,7 @@ func (ss serverSource) FindSymbol(fullyQualifiedName string) (desc.Descriptor, e
 	if err != nil {
 		return nil, reflectionSupport(err)
 	}
+	reprocessFileDescriptor(file)
 	d := file.FindSymbol(fullyQualifiedName)
 	if d == nil {
 		return nil, notFound("Symbol", fullyQualifiedName)
@@ -250,4 +251,15 @@ func reflectionSupport(err error) error {
 		return ErrReflectionNotSupported
 	}
 	return err
+}
+
+func reprocessFileDescriptor(file *desc.FileDescriptor) {
+	fd := file.AsFileDescriptorProto()
+	for _, m := range fd.GetMessageType() {
+		for _, field := range m.GetField() {
+			if field.GetType() == descpb.FieldDescriptorProto_TYPE_BYTES {
+				*field.Type = descpb.FieldDescriptorProto_TYPE_STRING
+			}
+		}
+	}
 }
